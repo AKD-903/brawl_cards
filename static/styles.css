@@ -1,0 +1,707 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+
+    min-height: 100vh;
+
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    color: white;
+
+    background:
+        radial-gradient(
+            circle at top,
+            #243b55,
+            #141e30 55%,
+            #0b1018
+        );
+}
+
+button {
+    font-family: inherit;
+}
+
+#app {
+    width: min(1400px, 96%);
+
+    margin: auto;
+
+    padding: 20px 0 40px;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.game-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 15px;
+}
+
+.game-header h1 {
+    margin: 0;
+
+    font-size: 32px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+.new-game {
+    border: none;
+
+    border-radius: 10px;
+
+    padding: 10px 18px;
+
+    background: white;
+
+    color: #151b25;
+
+    font-weight: 800;
+
+    cursor: pointer;
+}
+
+.new-game:hover {
+    transform: translateY(-1px);
+}
+
+
+/* ============================================================
+   TURN
+   ============================================================ */
+
+.turn-display {
+    padding: 14px;
+
+    margin-bottom: 8px;
+
+    border-radius: 14px;
+
+    text-align: center;
+
+    font-size: 24px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+}
+
+.your-turn {
+    border: 2px solid #4ade80;
+}
+
+.opponent-turn {
+    border: 2px solid #f87171;
+}
+
+.game-over {
+    border: 2px solid #facc15;
+
+    color: #facc15;
+}
+
+#status-display {
+    min-height: 24px;
+
+    margin-bottom: 18px;
+
+    text-align: center;
+
+    color: #cbd5e1;
+}
+
+
+/* ============================================================
+   BOARD
+   ============================================================ */
+
+#game-board {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+.player-section {
+    padding: 18px;
+
+    border-radius: 18px;
+
+    background:
+        rgba(15, 23, 42, 0.75);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.1);
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.player-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 12px;
+}
+
+.player-header h2 {
+    margin: 0;
+
+    font-size: 22px;
+}
+
+.player-subtitle {
+    color: #94a3b8;
+
+    font-size: 13px;
+}
+
+.reserve-counter {
+    padding: 7px 12px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    color: #cbd5e1;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.player-section h3 {
+    margin: 12px 0 8px;
+
+    color: #94a3b8;
+
+    font-size: 13px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+
+/* ============================================================
+   CARD ROW
+   ============================================================ */
+
+.card-row {
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, minmax(130px, 1fr));
+
+    gap: 12px;
+}
+
+.reserve-row {
+    grid-template-columns:
+        repeat(2, minmax(130px, 200px));
+}
+
+
+/* ============================================================
+   CARD
+   ============================================================ */
+
+.card {
+    min-height: 190px;
+
+    overflow: hidden;
+
+    position: relative;
+
+    border:
+        2px solid rgba(255, 255, 255, 0.08);
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #334155,
+            #1e293b
+        );
+
+    box-shadow:
+        0 6px 15px rgba(0, 0, 0, 0.25);
+
+    transition:
+        transform 0.15s,
+        border-color 0.15s,
+        box-shadow 0.15s;
+}
+
+.player-card,
+.opponent-card,
+.reserve-card {
+    cursor: pointer;
+}
+
+.player-card:hover,
+.opponent-card:hover,
+.reserve-card:hover {
+    transform: translateY(-3px);
+
+    border-color:
+        rgba(255, 255, 255, 0.35);
+}
+
+
+/* ============================================================
+   CARD CONTENT
+   ============================================================ */
+
+.card-top {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 8px;
+}
+
+.class-badge {
+    padding: 4px 7px;
+
+    border-radius: 5px;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+.class-badge.tank {
+    background: #7f1d1d;
+}
+
+.class-badge.support {
+    background: #166534;
+}
+
+.class-badge.damage {
+    background: #1d4ed8;
+}
+
+.super-ready {
+    padding: 4px 6px;
+
+    border-radius: 5px;
+
+    background: #facc15;
+
+    color: #422006;
+
+    font-size: 8px;
+
+    font-weight: 900;
+}
+
+.card-art {
+    width: 72px;
+
+    height: 72px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin: 6px auto;
+
+    border:
+        3px solid rgba(255, 255, 255, 0.1);
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, 0.12);
+
+    font-size: 24px;
+
+    font-weight: 900;
+}
+
+.card-name {
+    min-height: 36px;
+
+    padding: 2px 5px;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    font-weight: 800;
+}
+
+
+/* ============================================================
+   HP
+   ============================================================ */
+
+.hp-container {
+    padding: 6px 10px 10px;
+}
+
+.hp-bar {
+    height: 8px;
+
+    overflow: hidden;
+
+    border-radius: 5px;
+
+    background: #0f172a;
+}
+
+.hp-fill {
+    height: 100%;
+
+    background: #4ade80;
+
+    transition:
+        width 0.25s;
+}
+
+.hp-text {
+    display: block;
+
+    margin-top: 4px;
+
+    text-align: center;
+
+    color: #cbd5e1;
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   FACE DOWN
+   ============================================================ */
+
+.face-down {
+    background:
+        repeating-linear-gradient(
+            45deg,
+            #172554,
+            #172554 10px,
+            #1e3a8a 10px,
+            #1e3a8a 20px
+        );
+}
+
+.card-back {
+    min-height: 190px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    color: #bfdbfe;
+
+    font-size: 12px;
+
+    font-weight: 900;
+
+    letter-spacing: 2px;
+}
+
+.star {
+    color: #facc15;
+
+    font-size: 55px;
+}
+
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+.selected-attacker {
+    border-color: #4ade80 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(74, 222, 128, 0.2),
+        0 8px 25px rgba(74, 222, 128, 0.2);
+}
+
+.selected-target {
+    border-color: #f87171 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(248, 113, 113, 0.2),
+        0 8px 25px rgba(248, 113, 113, 0.2);
+}
+
+.selected-reserve {
+    border-color: #facc15 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(250, 204, 21, 0.2);
+}
+
+
+/* ============================================================
+   EMPTY SLOT
+   ============================================================ */
+
+.empty-slot {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    color: #64748b;
+
+    border-style: dashed;
+}
+
+.empty-icon {
+    font-size: 30px;
+}
+
+.swap-target {
+    border-color: #facc15;
+
+    color: #facc15;
+
+    cursor: pointer;
+}
+
+.swap-target:hover {
+    background:
+        rgba(250, 204, 21, 0.08);
+}
+
+
+/* ============================================================
+   CENTER
+   ============================================================ */
+
+.battle-center {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 8px 0;
+}
+
+.vs {
+    color: #facc15;
+
+    font-size: 25px;
+
+    font-weight: 1000;
+}
+
+.selection-panel {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+.selection-item {
+    min-width: 160px;
+
+    padding: 9px 13px;
+
+    border-radius: 9px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    color: #cbd5e1;
+
+    text-align: center;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+.selection-arrow {
+    color: #94a3b8;
+
+    font-size: 20px;
+}
+
+.action-buttons {
+    display: flex;
+
+    gap: 8px;
+}
+
+.action-button {
+    padding: 10px 18px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+.action-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.action-button:disabled {
+    opacity: 0.35;
+
+    cursor: not-allowed;
+}
+
+.attack {
+    background: #ef4444;
+
+    color: white;
+}
+
+.super {
+    background: #facc15;
+
+    color: #422006;
+}
+
+.cancel {
+    background: #475569;
+
+    color: white;
+}
+
+
+/* ============================================================
+   LOG
+   ============================================================ */
+
+.log-panel {
+    margin-top: 18px;
+
+    padding: 15px;
+
+    border-radius: 15px;
+
+    background:
+        rgba(15, 23, 42, 0.8);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.08);
+}
+
+.log-panel h2 {
+    margin: 0 0 10px;
+
+    color: #94a3b8;
+
+    font-size: 15px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+}
+
+#battle-log {
+    max-height: 180px;
+
+    overflow-y: auto;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+.log-entry {
+    padding: 6px 8px;
+
+    border-radius: 6px;
+
+    background:
+        rgba(255, 255, 255, 0.04);
+
+    color: #cbd5e1;
+
+    font-size: 12px;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 850px) {
+
+    .card-row {
+        grid-template-columns:
+            repeat(3, minmax(110px, 1fr));
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .card-row {
+        grid-template-columns:
+            repeat(2, minmax(100px, 1fr));
+    }
+
+    .selection-panel {
+        flex-direction: column;
+    }
+
+    .selection-arrow {
+        transform: rotate(90deg);
+    }
+
+}

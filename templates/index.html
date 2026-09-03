@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+    <title>Brawl Cards</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main id="app">
+        <header class="game-header">
+            <h1>BRAWL CARDS</h1>
+            <button id="new-game-button" class="new-game">New Game</button>
+        </header>
+
+        <div id="turn-display" class="turn-display">Loading...</div>
+        <div id="status-display">Loading game...</div>
+        <div id="game-board"></div>
+
+        <section class="log-panel">
+            <h2>Battle Log</h2>
+            <div id="battle-log"></div>
+        </section>
+    </main>
+
+    <script
+        src="{{ url_for('static', filename='app.js') }}"
+    ></script>
+</body>
+</html>
