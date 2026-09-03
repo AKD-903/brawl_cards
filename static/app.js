@@ -106,7 +106,7 @@ function newGame() {
         BRAWLERS.slice(0, 7);
 
     const botCards =
-        BRAWLERS.slice(8, 15);
+        BRAWLERS.slice(7, 14);
 
 
     game = {
@@ -1496,7 +1496,7 @@ function cardHTML(card) {
     const hpPercent =
         Math.max(
             0,
-            (card.currentHP / card.maxHP) * 100
+            (card.currentHP / card.maxHp) * 100
         );
 
 
@@ -1549,7 +1549,7 @@ function cardHTML(card) {
 
                 ${card.currentHP}
                 /
-                ${card.maxHP}
+                ${card.maxHp}
 
             </span>
 
