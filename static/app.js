@@ -319,7 +319,7 @@ function attack(useSuper = false) {
 
         botTurn();
 
-    }, 500);
+    }, 2000);
 }
 
 
@@ -686,7 +686,7 @@ function swap(
 
         botTurn();
 
-    }, 500);
+    }, 2000);
 }
 
 
