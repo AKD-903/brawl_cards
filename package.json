@@ -1,0 +1,10 @@
+{
+  "name": "brawler-game",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Core engine skeleton for a hidden-information strategy card battler.",
+  "main": "demo.js",
+  "scripts": {
+    "demo": "node demo.js"
+  }
+}
