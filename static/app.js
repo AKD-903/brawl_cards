@@ -430,7 +430,9 @@ function botTurn() {
         Math.random() < 0.30;
 
 
-    const damage = 1;
+    const damage = useSuper
+    ? attacker.superDamage
+    : attacker.basicDamage;
 
 
     target.currentHP =
