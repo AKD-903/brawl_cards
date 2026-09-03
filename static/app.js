@@ -278,6 +278,8 @@ function attack(useSuper = false) {
 
         game.opponent.graveyard.push(target);
 
+        game.opponent.active[selectedTarget] = null;
+
         game.log.push({
 
             type: "DEFEATED",
@@ -286,8 +288,7 @@ function attack(useSuper = false) {
 
             cardName: target.name
         });
-    }
-
+    }   
 
     checkWin();
 
@@ -442,11 +443,11 @@ function botTurn() {
         );
 
 
-    if (!attacker.hasActedOnce) {
-
+    if (!useSuper) {
         attacker.hasActedOnce = true;
-
         attacker.superUnlocked = true;
+    } else {
+        attacker.superUnlocked = false;
     }
 
 
@@ -474,6 +475,8 @@ function botTurn() {
         target.defeated = true;
 
         game.player.graveyard.push(target);
+
+        game.player.active[targetIndex] = null;
 
         game.log.push({
 
