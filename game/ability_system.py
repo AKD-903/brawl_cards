@@ -4,18 +4,31 @@ class AbilitySystem:
         self.registry = {}
         self._register_defaults()
 
-    def register(self, ability_id, function):
+    def register(
+        self,
+        ability_id,
+        function,
+    ):
         self.registry[ability_id] = function
 
-    def resolve(self, ability_id, context):
+    def resolve(
+        self,
+        ability_id,
+        context,
+    ):
         if ability_id not in self.registry:
             raise ValueError(
-                f'No ability registered under id "{ability_id}"'
+                f'No ability registered under id '
+                f'"{ability_id}"'
             )
 
         return self.registry[ability_id](context)
 
-    def _damage_one(self, context, is_super=False):
+    def _damage_one(
+        self,
+        context,
+        is_super=False,
+    ):
         target = context["target"]
 
         amount = 1
@@ -32,42 +45,50 @@ class AbilitySystem:
     def _register_defaults(self):
 
         # Basic attacks
+
         self.register(
             "basic_attack_damage_class",
-            lambda context: self._damage_one(context)
+            lambda context:
+                self._damage_one(context),
         )
 
         self.register(
             "basic_attack_tank_class",
-            lambda context: self._damage_one(context)
+            lambda context:
+                self._damage_one(context),
         )
 
         self.register(
             "basic_attack_support_class",
-            lambda context: self._damage_one(context)
+            lambda context:
+                self._damage_one(context),
         )
 
         # Supers
+
         self.register(
             "super_damage_class",
-            lambda context: self._damage_one(
-                context,
-                is_super=True
-            )
+            lambda context:
+                self._damage_one(
+                    context,
+                    is_super=True,
+                ),
         )
 
         self.register(
             "super_tank_class",
-            lambda context: self._damage_one(
-                context,
-                is_super=True
-            )
+            lambda context:
+                self._damage_one(
+                    context,
+                    is_super=True,
+                ),
         )
 
         self.register(
             "super_support_class",
-            lambda context: self._damage_one(
-                context,
-                is_super=True
-            )
+            lambda context:
+                self._damage_one(
+                    context,
+                    is_super=True,
+                ),
         )

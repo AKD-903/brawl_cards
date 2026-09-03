@@ -1,11 +1,22 @@
 class Player:
 
-    def __init__(self, id, name, deck):
+    def __init__(
+        self,
+        id,
+        name,
+        deck,
+    ):
         self.id = id
         self.name = name
 
-        self.active_slots = list(deck["active"])
-        self.reserve = list(deck["reserve"])
+        self.active_slots = list(
+            deck["active"]
+        )
+
+        self.reserve = list(
+            deck["reserve"]
+        )
+
         self.graveyard = []
 
     @property
@@ -25,7 +36,10 @@ class Player:
         return [
             card
             for card in self.active_slots
-            if card is not None and card.is_alive
+            if (
+                card is not None
+                and card.is_alive
+            )
         ]
 
     @property
@@ -39,7 +53,8 @@ class Player:
     @property
     def has_lost(self):
         active_alive = any(
-            card is not None and card.is_alive
+            card is not None
+            and card.is_alive
             for card in self.active_slots
         )
 
@@ -53,28 +68,41 @@ class Player:
     def swap_into_active(
         self,
         reserve_index,
-        active_slot_index
+        active_slot_index,
     ):
-        if reserve_index < 0 or reserve_index >= len(self.reserve):
+        if (
+            reserve_index < 0
+            or reserve_index >= len(self.reserve)
+        ):
             raise ValueError(
                 "Invalid reserve index."
             )
 
-        if active_slot_index < 0 or active_slot_index >= len(
-            self.active_slots
+        if (
+            active_slot_index < 0
+            or active_slot_index >= len(
+                self.active_slots
+            )
         ):
             raise ValueError(
                 "Invalid active slot."
             )
 
-        reserve_card = self.reserve[reserve_index]
+        reserve_card = self.reserve[
+            reserve_index
+        ]
 
         if not reserve_card.is_alive:
             raise ValueError(
                 "Can't field a defeated card."
             )
 
-        if self.active_slots[active_slot_index] is not None:
+        if (
+            self.active_slots[
+                active_slot_index
+            ]
+            is not None
+        ):
             raise ValueError(
                 "That active slot isn't empty."
             )
@@ -83,30 +111,28 @@ class Player:
 
         reserve_card.zone = "active"
 
-        self.active_slots[active_slot_index] = reserve_card
+        self.active_slots[
+            active_slot_index
+        ] = reserve_card
 
         return reserve_card
 
     def handle_defeat(self, card):
-        active_index = -1
+        # Remove from active slots.
 
-        try:
-            active_index = self.active_slots.index(card)
-        except ValueError:
-            pass
+        for index, active_card in enumerate(
+            self.active_slots
+        ):
+            if active_card is card:
+                self.active_slots[index] = None
+                break
 
-        if active_index != -1:
-            self.active_slots[active_index] = None
+        # Remove from reserve.
 
-        reserve_index = -1
+        if card in self.reserve:
+            self.reserve.remove(card)
 
-        try:
-            reserve_index = self.reserve.index(card)
-        except ValueError:
-            pass
-
-        if reserve_index != -1:
-            self.reserve.pop(reserve_index)
+        # Move to graveyard.
 
         card.zone = "graveyard"
 

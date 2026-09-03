@@ -1,8 +1,9 @@
-from flask import (
-    Flask,
-    jsonify,
-    render_template,
-    request,
+import json
+import random
+from pathlib import Path
+from http.server import (
+    SimpleHTTPRequestHandler,
+    ThreadingHTTPServer,
 )
 
 from data.starter_brawlers import starter_brawlers
@@ -11,7 +12,7 @@ from game.player import Player
 from game.game_engine import GameEngine
 
 
-app = Flask(__name__)
+ROOT = Path(__file__).resolve().parent
 
 
 # ============================================================
@@ -20,16 +21,12 @@ app = Flask(__name__)
 
 def create_game():
 
-    # Alice gets brawlers 1-5 active
-    # and 6-7 as reserves.
     deck_a = build_deck(
         starter_brawlers[0:5],
         starter_brawlers[5:7],
         "playerA",
     )
 
-    # Bob gets brawlers 8-12 active
-    # and 13-14 as reserves.
     deck_b = build_deck(
         starter_brawlers[7:12],
         starter_brawlers[12:14],
@@ -55,6 +52,10 @@ def create_game():
 
     engine.start_game()
 
+    # If Bob goes first, let him play.
+    if engine.active_player_id == "playerB":
+        bot_turn(engine)
+
     return engine
 
 
@@ -62,138 +63,10 @@ engine = create_game()
 
 
 # ============================================================
-# PAGE
-# ============================================================
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-# ============================================================
-# GAME STATE
-# ============================================================
-
-@app.route("/api/state")
-def state():
-
-    return jsonify(
-        engine.get_state_for("playerA")
-    )
-
-
-# ============================================================
-# ATTACK
-# ============================================================
-
-@app.route("/api/attack", methods=["POST"])
-def attack():
-
-    try:
-
-        data = request.get_json()
-
-        attacker_slot = int(
-            data["attackerSlot"]
-        )
-
-        target_slot = int(
-            data["targetSlot"]
-        )
-
-        use_super = bool(
-            data.get("useSuper", False)
-        )
-
-        result = engine.perform_attack(
-            "playerA",
-            attacker_slot,
-            target_slot,
-            use_super,
-        )
-
-        # Let the computer play Bob's turn.
-        if (
-            not engine.is_over
-            and engine.active_player_id == "playerB"
-        ):
-            bot_turn()
-
-        return jsonify({
-            "success": True,
-            "result": result,
-            "state": engine.get_state_for(
-                "playerA"
-            ),
-        })
-
-    except Exception as error:
-
-        return jsonify({
-            "success": False,
-            "error": str(error),
-            "state": engine.get_state_for(
-                "playerA"
-            ),
-        }), 400
-
-
-# ============================================================
-# SWAP
-# ============================================================
-
-@app.route("/api/swap", methods=["POST"])
-def swap():
-
-    try:
-
-        data = request.get_json()
-
-        reserve_index = int(
-            data["reserveIndex"]
-        )
-
-        active_slot = int(
-            data["activeSlot"]
-        )
-
-        card = engine.perform_swap(
-            "playerA",
-            reserve_index,
-            active_slot,
-        )
-
-        # Bob gets his turn after the swap.
-        if (
-            not engine.is_over
-            and engine.active_player_id == "playerB"
-        ):
-            bot_turn()
-
-        return jsonify({
-            "success": True,
-            "cardName": card.template.name,
-            "state": engine.get_state_for(
-                "playerA"
-            ),
-        })
-
-    except Exception as error:
-
-        return jsonify({
-            "success": False,
-            "error": str(error),
-            "state": engine.get_state_for(
-                "playerA"
-            ),
-        }), 400
-
-
-# ============================================================
 # BOT
 # ============================================================
 
-def bot_turn():
+def bot_turn(engine):
 
     if engine.is_over:
         return
@@ -204,22 +77,22 @@ def bot_turn():
     bot = engine.players["playerB"]
     human = engine.players["playerA"]
 
-    # --------------------------------------------------------
-    # Find an active attacker
-    # --------------------------------------------------------
+    # Find first living attacker.
 
     attacker_index = -1
 
     for index, card in enumerate(
         bot.active_slots
     ):
-        if card is not None and card.is_alive:
+        if (
+            card is not None
+            and card.is_alive
+        ):
             attacker_index = index
             break
 
-    # --------------------------------------------------------
-    # If no attacker exists, swap a reserve in.
-    # --------------------------------------------------------
+    # If no attacker exists,
+    # try to bring in a reserve.
 
     if attacker_index == -1:
 
@@ -253,16 +126,17 @@ def bot_turn():
 
         return
 
-    # --------------------------------------------------------
-    # Find a target.
-    # --------------------------------------------------------
+    # Find first living human target.
 
     target_index = -1
 
     for index, card in enumerate(
         human.active_slots
     ):
-        if card is not None and card.is_alive:
+        if (
+            card is not None
+            and card.is_alive
+        ):
             target_index = index
             break
 
@@ -273,10 +147,9 @@ def bot_turn():
         attacker_index
     ]
 
-    # Use super occasionally.
     use_super = (
         attacker.super_unlocked
-        and __import__("random").random() < 0.3
+        and random.random() < 0.30
     )
 
     try:
@@ -289,36 +162,324 @@ def bot_turn():
         )
 
     except Exception as error:
+
         print(
             f"Bot error: {error}"
         )
 
 
 # ============================================================
-# NEW GAME
+# HTTP SERVER
 # ============================================================
 
-@app.route("/api/new-game", methods=["POST"])
-def new_game():
+class GameRequestHandler(
+    SimpleHTTPRequestHandler
+):
 
-    global engine
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            *args,
+            directory=str(ROOT),
+            **kwargs,
+        )
 
-    engine = create_game()
+    # --------------------------------------------------------
+    # JSON RESPONSE
+    # --------------------------------------------------------
 
-    return jsonify({
-        "success": True,
-        "state": engine.get_state_for(
-            "playerA"
-        ),
-    })
+    def send_json(
+        self,
+        data,
+        status=200,
+    ):
+        body = json.dumps(
+            data
+        ).encode("utf-8")
+
+        self.send_response(status)
+
+        self.send_header(
+            "Content-Type",
+            "application/json",
+        )
+
+        self.send_header(
+            "Content-Length",
+            str(len(body)),
+        )
+
+        self.send_header(
+            "Cache-Control",
+            "no-cache",
+        )
+
+        self.end_headers()
+
+        self.wfile.write(body)
+
+    # --------------------------------------------------------
+    # READ JSON
+    # --------------------------------------------------------
+
+    def read_json(self):
+
+        length = int(
+            self.headers.get(
+                "Content-Length",
+                0,
+            )
+        )
+
+        body = self.rfile.read(
+            length
+        )
+
+        if not body:
+            return {}
+
+        return json.loads(
+            body.decode("utf-8")
+        )
+
+    # --------------------------------------------------------
+    # GET
+    # --------------------------------------------------------
+
+    def do_GET(self):
+
+        if self.path == "/api/state":
+
+            self.send_json(
+                engine.get_state_for(
+                    "playerA"
+                )
+            )
+
+            return
+
+        super().do_GET()
+
+    # --------------------------------------------------------
+    # POST
+    # --------------------------------------------------------
+
+    def do_POST(self):
+
+        global engine
+
+        # ----------------------------------------------------
+        # ATTACK
+        # ----------------------------------------------------
+
+        if self.path == "/api/attack":
+
+            try:
+
+                data = self.read_json()
+
+                attacker_slot = int(
+                    data["attackerSlot"]
+                )
+
+                target_slot = int(
+                    data["targetSlot"]
+                )
+
+                use_super = bool(
+                    data.get(
+                        "useSuper",
+                        False,
+                    )
+                )
+
+                result = engine.perform_attack(
+                    "playerA",
+                    attacker_slot,
+                    target_slot,
+                    use_super,
+                )
+
+                # Bob takes his turn.
+
+                if (
+                    not engine.is_over
+                    and engine.active_player_id
+                    == "playerB"
+                ):
+                    bot_turn(engine)
+
+                self.send_json({
+                    "success": True,
+                    "result": result,
+                    "state":
+                        engine.get_state_for(
+                            "playerA"
+                        ),
+                })
+
+            except Exception as error:
+
+                self.send_json(
+                    {
+                        "success": False,
+                        "error": str(error),
+                        "state":
+                            engine.get_state_for(
+                                "playerA"
+                            ),
+                    },
+                    status=400,
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # SWAP
+        # ----------------------------------------------------
+
+        if self.path == "/api/swap":
+
+            try:
+
+                data = self.read_json()
+
+                reserve_index = int(
+                    data["reserveIndex"]
+                )
+
+                active_slot = int(
+                    data["activeSlot"]
+                )
+
+                card = engine.perform_swap(
+                    "playerA",
+                    reserve_index,
+                    active_slot,
+                )
+
+                # Bob takes his turn.
+
+                if (
+                    not engine.is_over
+                    and engine.active_player_id
+                    == "playerB"
+                ):
+                    bot_turn(engine)
+
+                self.send_json({
+                    "success": True,
+
+                    "cardName":
+                        card.template.name,
+
+                    "state":
+                        engine.get_state_for(
+                            "playerA"
+                        ),
+                })
+
+            except Exception as error:
+
+                self.send_json(
+                    {
+                        "success": False,
+                        "error": str(error),
+                        "state":
+                            engine.get_state_for(
+                                "playerA"
+                            ),
+                    },
+                    status=400,
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # NEW GAME
+        # ----------------------------------------------------
+
+        if self.path == "/api/new-game":
+
+            try:
+
+                engine = create_game()
+
+                self.send_json({
+                    "success": True,
+                    "state":
+                        engine.get_state_for(
+                            "playerA"
+                        ),
+                })
+
+            except Exception as error:
+
+                self.send_json(
+                    {
+                        "success": False,
+                        "error": str(error),
+                    },
+                    status=500,
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # UNKNOWN POST
+        # ----------------------------------------------------
+
+        self.send_json(
+            {
+                "success": False,
+                "error": "Unknown endpoint.",
+            },
+            status=404,
+        )
 
 
 # ============================================================
-# RUN SERVER
+# START
 # ============================================================
 
 if __name__ == "__main__":
-    app.run(
-        debug=True,
-        port=5000,
+
+    host = "127.0.0.1"
+    port = 8000
+
+    server = ThreadingHTTPServer(
+        (host, port),
+        GameRequestHandler,
     )
+
+    print()
+    print("====================================")
+    print("       BRAWL CARDS SERVER")
+    print("====================================")
+    print()
+    print(
+        f"Game running at:"
+    )
+    print(
+        f"http://{host}:{port}"
+    )
+    print()
+    print(
+        "Press Ctrl+C to stop the server."
+    )
+    print()
+
+    try:
+        server.serve_forever()
+
+    except KeyboardInterrupt:
+
+        print()
+        print("Server stopped.")
+
+    finally:
+
+        server.server_close()

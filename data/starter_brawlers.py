@@ -25,11 +25,9 @@ ABILITY_ID_BY_CLASS = {
 def make_template(
     id,
     name,
-    brawler_class
+    brawler_class,
 ):
-    abilities = ABILITY_ID_BY_CLASS[
-        brawler_class
-    ]
+    abilities = ABILITY_ID_BY_CLASS[brawler_class]
 
     return BrawlerTemplate(
         id=id,

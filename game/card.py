@@ -5,10 +5,16 @@ class Card:
 
     _instance_counter = 0
 
-    def __init__(self, template, owner_id):
+    def __init__(
+        self,
+        template,
+        owner_id,
+    ):
         Card._instance_counter += 1
 
-        self.instance_id = f"card_{Card._instance_counter}"
+        self.instance_id = (
+            f"card_{Card._instance_counter}"
+        )
 
         self.template = template
         self.owner_id = owner_id
@@ -34,6 +40,7 @@ class Card:
         """
         First successful attack unlocks the super.
         """
+
         if not self.has_acted_once:
             self.has_acted_once = True
             self.super_unlocked = True
@@ -41,7 +48,7 @@ class Card:
     def apply_damage(self, amount):
         self.current_hp = max(
             0,
-            self.current_hp - amount
+            self.current_hp - amount,
         )
 
         if self.current_hp == 0:
@@ -52,14 +59,14 @@ class Card:
     def apply_healing(self, amount):
         self.current_hp = min(
             self.template.max_hp,
-            self.current_hp + amount
+            self.current_hp + amount,
         )
 
         return self.current_hp
 
     def to_public_view(self):
         """
-        What the opponent is allowed to see.
+        Information visible to the opponent.
         """
 
         if not self.is_revealed:
@@ -78,7 +85,9 @@ class Card:
             "zone": self.zone,
             "alive": self.is_alive,
             "name": self.template.name,
-            "brawlerClass": self.template.brawler_class.value,
+            "brawlerClass": (
+                self.template.brawler_class.value
+            ),
             "currentHP": self.current_hp,
             "maxHP": self.template.max_hp,
             "superUnlocked": self.super_unlocked,
@@ -92,7 +101,9 @@ class Card:
             "zone": self.zone,
             "alive": self.is_alive,
             "name": self.template.name,
-            "brawlerClass": self.template.brawler_class.value,
+            "brawlerClass": (
+                self.template.brawler_class.value
+            ),
             "currentHP": self.current_hp,
             "maxHP": self.template.max_hp,
             "superUnlocked": self.super_unlocked,

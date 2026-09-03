@@ -8,7 +8,7 @@ DECK_RESERVE_SIZE = 2
 def build_deck(
     active_templates,
     reserve_templates,
-    owner_id
+    owner_id,
 ):
     if len(active_templates) != DECK_ACTIVE_SIZE:
         raise ValueError(
@@ -24,11 +24,14 @@ def build_deck(
             f"(got {len(reserve_templates)})"
         )
 
+    all_templates = (
+        active_templates
+        + reserve_templates
+    )
+
     all_ids = [
         template.id
-        for template in (
-            active_templates + reserve_templates
-        )
+        for template in all_templates
     ]
 
     if len(set(all_ids)) != len(all_ids):
@@ -39,15 +42,25 @@ def build_deck(
     active = []
 
     for template in active_templates:
-        card = Card(template, owner_id)
+        card = Card(
+            template,
+            owner_id,
+        )
+
         card.zone = "active"
+
         active.append(card)
 
     reserve = []
 
     for template in reserve_templates:
-        card = Card(template, owner_id)
+        card = Card(
+            template,
+            owner_id,
+        )
+
         card.zone = "reserve"
+
         reserve.append(card)
 
     return {

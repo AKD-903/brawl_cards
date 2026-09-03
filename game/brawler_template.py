@@ -16,10 +16,10 @@ HP_BY_CLASS = {
 
 class BrawlerTemplate:
     """
-    Static definition of a brawler.
+    Permanent definition of a brawler.
 
-    This is the brawler's permanent definition.
-    An individual Card is created from this template.
+    A Card is an individual in-game copy
+    of this template.
     """
 
     def __init__(
@@ -32,9 +32,13 @@ class BrawlerTemplate:
         max_hp=None,
         art_placeholder_color="#888888",
     ):
-        if not isinstance(brawler_class, BrawlerClass):
+        if not isinstance(
+            brawler_class,
+            BrawlerClass,
+        ):
             raise ValueError(
-                f"Unknown brawler class '{brawler_class}' for {id}"
+                f"Unknown brawler class "
+                f"'{brawler_class}' for {id}"
             )
 
         self.id = id
@@ -49,4 +53,6 @@ class BrawlerTemplate:
 
         self.basic_attack_id = basic_attack_id
         self.super_ability_id = super_ability_id
-        self.art_placeholder_color = art_placeholder_color
+        self.art_placeholder_color = (
+            art_placeholder_color
+        )

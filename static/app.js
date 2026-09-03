@@ -34,9 +34,12 @@ async function getState() {
     const response =
         await fetch("/api/state");
 
-    state = await response.json();
+    state =
+        await response.json();
 
     render();
+
+    renderLog();
 }
 
 
@@ -50,31 +53,36 @@ async function attack(useSuper) {
         selectedAttacker === null ||
         selectedTarget === null
     ) {
+        statusDisplay.textContent =
+            "Select an attacker and target first.";
+
         return;
     }
 
     const response =
-        await fetch("/api/attack", {
+        await fetch(
+            "/api/attack",
+            {
+                method: "POST",
 
-            method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+                body: JSON.stringify({
 
-            body: JSON.stringify({
+                    attackerSlot:
+                        selectedAttacker,
 
-                attackerSlot:
-                    selectedAttacker,
+                    targetSlot:
+                        selectedTarget,
 
-                targetSlot:
-                    selectedTarget,
-
-                useSuper:
-                    useSuper
-
-            })
-        });
+                    useSuper:
+                        useSuper
+                })
+            }
+        );
 
     const data =
         await response.json();
@@ -87,24 +95,14 @@ async function attack(useSuper) {
         return;
     }
 
-    state = data.state;
-
-    addLog(
-        useSuper
-            ? "Alice used SUPER!"
-            : "Alice attacked for 1 damage!"
-    );
+    state =
+        data.state;
 
     clearSelection();
 
     render();
 
-    // Give the bot a moment visually.
-    await new Promise(
-        resolve => setTimeout(resolve, 400)
-    );
-
-    render();
+    renderLog();
 }
 
 
@@ -118,24 +116,27 @@ async function swap(
 ) {
 
     const response =
-        await fetch("/api/swap", {
+        await fetch(
+            "/api/swap",
+            {
+                method: "POST",
 
-            method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+                body: JSON.stringify({
 
-            body: JSON.stringify({
+                    reserveIndex:
+                        reserveIndex,
 
-                reserveIndex:
-                    reserveIndex,
+                    activeSlot:
+                        activeSlot
 
-                activeSlot:
-                    activeSlot
-
-            })
-        });
+                })
+            }
+        );
 
     const data =
         await response.json();
@@ -148,15 +149,14 @@ async function swap(
         return;
     }
 
-    state = data.state;
-
-    addLog(
-        `Alice swapped ${data.cardName} into the battlefield.`
-    );
+    state =
+        data.state;
 
     clearSelection();
 
     render();
+
+    renderLog();
 }
 
 
@@ -177,21 +177,22 @@ async function newGame() {
     const data =
         await response.json();
 
-    state = data.state;
+    if (!data.success) {
+
+        statusDisplay.textContent =
+            data.error;
+
+        return;
+    }
+
+    state =
+        data.state;
 
     clearSelection();
 
-    battleLog.innerHTML = "";
-
-    addLog(
-        `New game started. ${
-            state.activePlayerId === "playerA"
-                ? "Alice"
-                : "Bob"
-        } goes first.`
-    );
-
     render();
+
+    renderLog();
 }
 
 
@@ -296,15 +297,22 @@ function renderOpponent() {
         <div class="player-header">
 
             <div>
-                <h2>${state.opponent.name}</h2>
+
+                <h2>
+                    ${state.opponent.name}
+                </h2>
+
                 <span class="player-subtitle">
                     Opponent
                 </span>
+
             </div>
 
             <div class="reserve-counter">
+
                 Reserve:
                 ${state.opponent.reserveCount}
+
             </div>
 
         </div>
@@ -353,16 +361,22 @@ function renderPlayer() {
         <div class="player-header">
 
             <div>
-                <h2>${state.you.name}</h2>
+
+                <h2>
+                    ${state.you.name}
+                </h2>
 
                 <span class="player-subtitle">
                     You
                 </span>
+
             </div>
 
             <div class="reserve-counter">
+
                 Reserve:
                 ${state.you.reserve.length}
+
             </div>
 
         </div>
@@ -452,6 +466,7 @@ function renderCenter() {
         <div class="selection-panel">
 
             <div class="selection-item">
+
                 ${
                     selectedAttacker !== null
                         ? state.you.active[
@@ -459,6 +474,7 @@ function renderCenter() {
                           ]?.name
                         : "Attacker: None"
                 }
+
             </div>
 
             <div class="selection-arrow">
@@ -466,11 +482,13 @@ function renderCenter() {
             </div>
 
             <div class="selection-item">
+
                 ${
                     selectedTarget !== null
                         ? getTargetName()
                         : "Target: None"
                 }
+
             </div>
 
         </div>
@@ -479,23 +497,26 @@ function renderCenter() {
 
             <button
                 id="attack-button"
-                class="action-button attack"
-            >
+                class="action-button attack">
+
                 Basic Attack
+
             </button>
 
             <button
                 id="super-button"
-                class="action-button super"
-            >
+                class="action-button super">
+
                 Super
+
             </button>
 
             <button
                 id="clear-button"
-                class="action-button cancel"
-            >
+                class="action-button cancel">
+
                 Clear
+
             </button>
 
         </div>
@@ -528,7 +549,7 @@ function renderCenter() {
         state.isOver;
 
 
-    let attacker =
+    const attacker =
         selectedAttacker !== null
             ? state.you.active[
                 selectedAttacker
@@ -556,7 +577,6 @@ function renderCenter() {
             clearSelection();
 
             render();
-
         };
 }
 
@@ -637,7 +657,9 @@ function createPlayerCard(
             return;
         }
 
-        if (selectedReserve !== null) {
+        if (
+            selectedReserve !== null
+        ) {
             clearSelection();
         }
 
@@ -787,12 +809,14 @@ function createReserveCard(
 
 
     element.innerHTML = `
+
         <div class="card-top">
 
             <span
-                class="class-badge ${card.brawlerClass}"
-            >
+                class="class-badge ${card.brawlerClass}">
+
                 ${card.brawlerClass}
+
             </span>
 
         </div>
@@ -808,6 +832,7 @@ function createReserveCard(
         <div class="reserve-hint">
             Click to select
         </div>
+
     `;
 
 
@@ -853,16 +878,19 @@ function cardHTML(card) {
         <div class="card-top">
 
             <span
-                class="class-badge ${card.brawlerClass}"
-            >
+                class="class-badge ${card.brawlerClass}">
+
                 ${card.brawlerClass}
+
             </span>
 
             ${
                 card.superUnlocked
-                    ? `<span class="super-ready">
-                        SUPER
-                       </span>`
+                    ? `
+                        <span class="super-ready">
+                            SUPER
+                        </span>
+                    `
                     : ""
             }
 
@@ -885,17 +913,151 @@ function cardHTML(card) {
 
                 <div
                     class="hp-fill"
-                    style="width:${hpPercent}%"
-                ></div>
+                    style="width:${hpPercent}%">
+                </div>
 
             </div>
 
             <span class="hp-text">
-                ${card.currentHP} / ${card.maxHP}
+
+                ${card.currentHP}
+                /
+                ${card.maxHP}
+
             </span>
 
         </div>
     `;
+}
+
+
+// ============================================================
+// LOG
+// ============================================================
+
+function renderLog() {
+
+    if (!state || !state.log) {
+        return;
+    }
+
+    battleLog.innerHTML = "";
+
+    const events =
+        [...state.log].reverse();
+
+    events.forEach(event => {
+
+        const entry =
+            document.createElement("div");
+
+        entry.className =
+            "log-entry";
+
+        entry.textContent =
+            formatEvent(event);
+
+        battleLog.appendChild(entry);
+    });
+}
+
+
+function formatEvent(event) {
+
+    if (
+        event.type === "GAME_START"
+    ) {
+
+        const name =
+            event.firstPlayerId === "playerA"
+                ? "Alice"
+                : "Bob";
+
+        return `${name} goes first.`;
+    }
+
+
+    if (
+        event.type === "BASIC_ATTACK"
+    ) {
+
+        const player =
+            event.playerId === "playerA"
+                ? "Alice"
+                : "Bob";
+
+        return (
+            `${player}'s ${event.attackerName} `
+            + `attacked ${event.targetName} `
+            + `for 1 damage.`
+        );
+    }
+
+
+    if (
+        event.type === "SUPER_ATTACK"
+    ) {
+
+        const player =
+            event.playerId === "playerA"
+                ? "Alice"
+                : "Bob";
+
+        return (
+            `${player}'s ${event.attackerName} `
+            + `used SUPER on `
+            + `${event.targetName} `
+            + `for 1 damage.`
+        );
+    }
+
+
+    if (
+        event.type === "DEFEATED"
+    ) {
+
+        const player =
+            event.playerId === "playerA"
+                ? "Alice"
+                : "Bob";
+
+        return (
+            `${player}'s ${event.cardName} `
+            + `was defeated.`
+        );
+    }
+
+
+    if (
+        event.type === "SWAP"
+    ) {
+
+        const player =
+            event.playerId === "playerA"
+                ? "Alice"
+                : "Bob";
+
+        return (
+            `${player} fielded `
+            + `${event.cardName}.`
+        );
+    }
+
+
+    if (
+        event.type === "GAME_OVER"
+    ) {
+
+        const winner =
+            event.winnerId === "playerA"
+                ? "Alice"
+                : "Bob";
+
+        return `${winner} wins the game!`;
+    }
+
+
+    return event.type;
 }
 
 
@@ -933,6 +1095,7 @@ function getInitials(name) {
 
 
     if (words.length === 1) {
+
         return words[0]
             .slice(0, 2)
             .toUpperCase();
@@ -946,21 +1109,6 @@ function getInitials(name) {
         )
         .join("")
         .toUpperCase();
-}
-
-
-function addLog(message) {
-
-    const entry =
-        document.createElement("div");
-
-    entry.className =
-        "log-entry";
-
-    entry.textContent =
-        message;
-
-    battleLog.prepend(entry);
 }
 
 
