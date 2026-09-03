@@ -528,6 +528,7 @@ function botSwap() {
     ) {
 
         if (
+            game.opponent.reserve[i] &&
             !game.opponent.reserve[i].defeated
         ) {
 
@@ -538,6 +539,8 @@ function botSwap() {
     }
 
 
+    // No reserves left.
+
     if (reserveIndex === -1) {
 
         checkWin();
@@ -546,8 +549,9 @@ function botSwap() {
     }
 
 
-    let emptySlot = -1;
+    // Find a defeated/empty active slot.
 
+    let emptySlot = -1;
 
     for (
         let i = 0;
@@ -555,8 +559,12 @@ function botSwap() {
         i++
     ) {
 
+        const card =
+            game.opponent.active[i];
+
         if (
-            !game.opponent.active[i]
+            !card ||
+            card.defeated
         ) {
 
             emptySlot = i;
@@ -566,10 +574,14 @@ function botSwap() {
     }
 
 
+    // No slot available.
+
     if (emptySlot === -1) {
         return;
     }
 
+
+    // Remove the reserve brawler.
 
     const card =
         game.opponent.reserve.splice(
@@ -578,12 +590,12 @@ function botSwap() {
         )[0];
 
 
+    // Field the new brawler.
+
     card.revealed = false;
 
-
-    game.opponent.active[
-        emptySlot
-    ] = card;
+    game.opponent.active[emptySlot] =
+        card;
 
 
     game.log.push({
@@ -596,10 +608,11 @@ function botSwap() {
     });
 
 
+    // Bob has used his turn.
+
     game.activePlayer = "playerA";
 
     game.turnNumber++;
-
 
     render();
 
@@ -739,7 +752,7 @@ function checkWin() {
 
             winnerId: "playerB"
         });
-
+function
         return;
     }
 
