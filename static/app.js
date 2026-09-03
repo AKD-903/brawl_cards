@@ -14,23 +14,34 @@ let selectedReserve = null;
 // ============================================================
 
 const BRAWLERS = [
-    { id: 1, name: "Tank 1", class: "tank", maxHP: 130 },
-    { id: 2, name: "Tank 2", class: "tank", maxHP: 130 },
-    { id: 3, name: "Tank 3", class: "tank", maxHP: 130 },
-    { id: 4, name: "Tank 4", class: "tank", maxHP: 130 },
-    { id: 5, name: "Tank 5", class: "tank", maxHP: 130 },
+    // Damage Dealers — 130 HP
+    { id: 1, name: "Shelly", class: "Damage Dealer", maxHp: 130 },
+    { id: 2, name: "Colt", class: "Damage Dealer", maxHp: 130 },
+    { id: 3, name: "Spike", class: "Damage Dealer", maxHp: 130 },
+    { id: 4, name: "Nita", class: "Damage Dealer", maxHp: 130 },
+    { id: 5, name: "Rico", class: "Damage Dealer", maxHp: 130 },
 
-    { id: 6, name: "Support 1", class: "support", maxHP: 70 },
-    { id: 7, name: "Support 2", class: "support", maxHP: 70 },
-    { id: 8, name: "Support 3", class: "support", maxHP: 70 },
-    { id: 9, name: "Support 4", class: "support", maxHP: 70 },
-    { id: 10, name: "Support 5", class: "support", maxHP: 70 },
+    // Support — 100 HP
+    { id: 6, name: "Poco", class: "Support", maxHp: 100 },
 
-    { id: 11, name: "Damage 1", class: "damage", maxHP: 100 },
-    { id: 12, name: "Damage 2", class: "damage", maxHP: 100 },
-    { id: 13, name: "Damage 3", class: "damage", maxHP: 100 },
-    { id: 14, name: "Damage 4", class: "damage", maxHP: 100 },
-    { id: 15, name: "Damage 5", class: "damage", maxHP: 100 }
+    // Assassins — 110 HP
+    { id: 7, name: "Crow", class: "Assassin", maxHp: 110 },
+    { id: 8, name: "Mortis", class: "Assassin", maxHp: 110 },
+
+    // Controllers — 120 HP
+    { id: 9, name: "Jessie", class: "Controller", maxHp: 120 },
+    { id: 10, name: "Bo", class: "Controller", maxHp: 120 },
+
+    // Marksman — 110 HP
+    { id: 11, name: "Brock", class: "Marksman", maxHp: 110 },
+
+    // Tank — 150 HP
+    { id: 12, name: "Bull", class: "Tank", maxHp: 150 },
+    { id: 13, name: "El Primo", class: "Tank", maxHp: 150 },
+
+    // Artillery — 90 HP
+    { id: 14, name: "Barley", class: "Artillery", maxHp: 90 },
+    { id: 15, name: "Dynamike", class: "Artillery", maxHp: 90 }
 ];
 
 
@@ -58,27 +69,16 @@ const newGameButton =
 // CREATE CARD
 // ============================================================
 
-function createCard(template, owner) {
-
+function createCard(brawler, owner) {
     return {
-        id: `card_${template.id}_${owner}`,
-
-        name: template.name,
-
-        brawlerClass: template.class,
-
-        maxHP: template.maxHP,
-
-        currentHP: template.maxHP,
-
+        id: brawler.id,
+        name: brawler.name,
+        class: brawler.class,
+        maxHp: brawler.maxHp,
+        hp: brawler.maxHp,
         owner: owner,
-
-        revealed: owner === "playerA",
-
+        revealed: false,
         superUnlocked: false,
-
-        hasActedOnce: false,
-
         defeated: false
     };
 }
