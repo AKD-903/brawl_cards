@@ -14,32 +14,35 @@ let selectedReserve = null;
 // ============================================================
 
 const BRAWLERS = [
-    // Damage Dealers — 130 HP
-    { id: 1, name: "Shelly", class: "Damage Dealer", maxHp: 130 },
+    {
+        id: 1,
+        name: "Shelly",
+        class: "Damage Dealer",
+        maxHp: 130,
+        basicAttackName: "Buckshot",
+        basicDamage: 50,
+        superName: "Super Shell",
+        superDamage: 100
+    },
+
     { id: 2, name: "Colt", class: "Damage Dealer", maxHp: 130 },
     { id: 3, name: "Spike", class: "Damage Dealer", maxHp: 130 },
     { id: 4, name: "Nita", class: "Damage Dealer", maxHp: 130 },
     { id: 5, name: "Rico", class: "Damage Dealer", maxHp: 130 },
 
-    // Support — 100 HP
     { id: 6, name: "Poco", class: "Support", maxHp: 100 },
 
-    // Assassins — 110 HP
     { id: 7, name: "Crow", class: "Assassin", maxHp: 110 },
     { id: 8, name: "Mortis", class: "Assassin", maxHp: 110 },
 
-    // Controllers — 120 HP
     { id: 9, name: "Jessie", class: "Controller", maxHp: 120 },
     { id: 10, name: "Bo", class: "Controller", maxHp: 120 },
 
-    // Marksman — 110 HP
     { id: 11, name: "Brock", class: "Marksman", maxHp: 110 },
 
-    // Tank — 150 HP
     { id: 12, name: "Bull", class: "Tank", maxHp: 150 },
     { id: 13, name: "El Primo", class: "Tank", maxHp: 150 },
 
-    // Artillery — 90 HP
     { id: 14, name: "Barley", class: "Artillery", maxHp: 90 },
     { id: 15, name: "Dynamike", class: "Artillery", maxHp: 90 }
 ];
@@ -74,10 +77,19 @@ function createCard(brawler, owner) {
         id: brawler.id,
         name: brawler.name,
         class: brawler.class,
+
         maxHp: brawler.maxHp,
-        hp: brawler.maxHp,
+        currentHP: brawler.maxHp,
+
+        basicAttackName: brawler.basicAttackName || "Basic Attack",
+        basicDamage: brawler.basicDamage || 1,
+
+        superName: brawler.superName || "Super",
+        superDamage: brawler.superDamage || 1,
+
         owner: owner,
         revealed: false,
+        hasActedOnce: false,
         superUnlocked: false,
         defeated: false
     };
@@ -220,7 +232,9 @@ function attack(useSuper = false) {
     // Basic attacks and Supers currently
     // both deal 1 damage.
 
-    const damage = 1;
+    const damage = useSuper
+    ? attacker.superDamage
+    : attacker.basicDamage;
 
     target.currentHP =
         Math.max(
@@ -1048,6 +1062,16 @@ function renderCenter() {
     }
 
 
+    // Get the currently selected attacker.
+
+    const attacker =
+        selectedAttacker !== null
+            ? game.player.active[
+                selectedAttacker
+              ]
+            : null;
+
+
     center.innerHTML = `
 
         <div class="vs">
@@ -1076,7 +1100,9 @@ function renderCenter() {
                 id="attack-button"
                 class="action-button attack">
 
-                Basic Attack
+                ${attacker
+                    ? attacker.basicAttackName
+                    : "Basic Attack"}
 
             </button>
 
@@ -1084,7 +1110,9 @@ function renderCenter() {
                 id="super-button"
                 class="action-button super">
 
-                Super
+                ${attacker
+                    ? attacker.superName
+                    : "Super"}
 
             </button>
 
@@ -1121,14 +1149,6 @@ function renderCenter() {
         );
 
 
-    const attacker =
-        selectedAttacker !== null
-            ? game.player.active[
-                selectedAttacker
-              ]
-            : null;
-
-
     attackButton.disabled =
         selectedAttacker === null ||
         selectedTarget === null ||
@@ -1160,7 +1180,6 @@ function renderCenter() {
             render();
         };
 }
-
 
 // ============================================================
 // PLAYER CARD
