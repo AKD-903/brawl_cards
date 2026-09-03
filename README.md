@@ -62,9 +62,11 @@ to 100 real ones with unique kits.
 ```
 ├brawl-cards/
 ├── data/
+    ├── __init__.py
 │   └── starter_brawlers.py
 │
 ├── game/
+    ├── __init__.py
 │   ├── ability_system.py
 │   ├── brawler_template.py
 │   ├── card.py
@@ -73,9 +75,8 @@ to 100 real ones with unique kits.
 │   └── player.py
 │
 ├── app.py
-│
-├── templates/
-│   └── index.html
+├──index.html
+├──README.md
 │
 └── static/
     ├── app.js   
