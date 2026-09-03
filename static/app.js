@@ -1,8 +1,37 @@
-let state = null;
+// ============================================================
+// BRAWL CARDS — GITHUB PAGES VERSION
+// ============================================================
+
+let game = null;
 
 let selectedAttacker = null;
 let selectedTarget = null;
 let selectedReserve = null;
+
+
+// ============================================================
+// BRAWLER DATA
+// ============================================================
+
+const BRAWLERS = [
+    { id: 1, name: "Tank 1", class: "tank", maxHP: 130 },
+    { id: 2, name: "Tank 2", class: "tank", maxHP: 130 },
+    { id: 3, name: "Tank 3", class: "tank", maxHP: 130 },
+    { id: 4, name: "Tank 4", class: "tank", maxHP: 130 },
+    { id: 5, name: "Tank 5", class: "tank", maxHP: 130 },
+
+    { id: 6, name: "Support 1", class: "support", maxHP: 70 },
+    { id: 7, name: "Support 2", class: "support", maxHP: 70 },
+    { id: 8, name: "Support 3", class: "support", maxHP: 70 },
+    { id: 9, name: "Support 4", class: "support", maxHP: 70 },
+    { id: 10, name: "Support 5", class: "support", maxHP: 70 },
+
+    { id: 11, name: "Damage 1", class: "damage", maxHP: 100 },
+    { id: 12, name: "Damage 2", class: "damage", maxHP: 100 },
+    { id: 13, name: "Damage 3", class: "damage", maxHP: 100 },
+    { id: 14, name: "Damage 4", class: "damage", maxHP: 100 },
+    { id: 15, name: "Damage 5", class: "damage", maxHP: 100 }
+];
 
 
 // ============================================================
@@ -26,16 +55,98 @@ const newGameButton =
 
 
 // ============================================================
-// SERVER
+// CREATE CARD
 // ============================================================
 
-async function getState() {
+function createCard(template, owner) {
 
-    const response =
-        await fetch("/api/state");
+    return {
+        id: `card_${template.id}_${owner}`,
 
-    state =
-        await response.json();
+        name: template.name,
+
+        brawlerClass: template.class,
+
+        maxHP: template.maxHP,
+
+        currentHP: template.maxHP,
+
+        owner: owner,
+
+        revealed: owner === "playerA",
+
+        superUnlocked: false,
+
+        hasActedOnce: false,
+
+        defeated: false
+    };
+}
+
+
+// ============================================================
+// NEW GAME
+// ============================================================
+
+function newGame() {
+
+    const playerCards =
+        BRAWLERS.slice(0, 7);
+
+    const botCards =
+        BRAWLERS.slice(8, 15);
+
+
+    game = {
+
+        turnNumber: 1,
+
+        activePlayer: "playerA",
+
+        isOver: false,
+
+        winner: null,
+
+        player: {
+
+            name: "Alice",
+
+            active: playerCards
+                .slice(0, 5)
+                .map(b => createCard(b, "playerA")),
+
+            reserve: playerCards
+                .slice(5, 7)
+                .map(b => createCard(b, "playerA")),
+
+            graveyard: []
+        },
+
+        opponent: {
+
+            name: "Bob",
+
+            active: botCards
+                .slice(0, 5)
+                .map(b => createCard(b, "playerB")),
+
+            reserve: botCards
+                .slice(5, 7)
+                .map(b => createCard(b, "playerB")),
+
+            graveyard: []
+        },
+
+        log: [
+            {
+                type: "GAME_START",
+                firstPlayerId: "playerA"
+            }
+        ]
+    };
+
+
+    clearSelection();
 
     render();
 
@@ -47,58 +158,335 @@ async function getState() {
 // ATTACK
 // ============================================================
 
-async function attack(useSuper) {
+function attack(useSuper = false) {
+
+    if (game.isOver) {
+        return;
+    }
+
+
+    if (game.activePlayer !== "playerA") {
+        return;
+    }
+
 
     if (
         selectedAttacker === null ||
         selectedTarget === null
     ) {
+
         statusDisplay.textContent =
             "Select an attacker and target first.";
 
         return;
     }
 
-    const response =
-        await fetch(
-            "/api/attack",
-            {
-                method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+    const attacker =
+        game.player.active[selectedAttacker];
 
-                body: JSON.stringify({
+    const target =
+        game.opponent.active[selectedTarget];
 
-                    attackerSlot:
-                        selectedAttacker,
 
-                    targetSlot:
-                        selectedTarget,
+    if (!attacker || attacker.defeated) {
+        return;
+    }
 
-                    useSuper:
-                        useSuper
-                })
-            }
-        );
 
-    const data =
-        await response.json();
+    if (!target || target.defeated) {
+        return;
+    }
 
-    if (!data.success) {
+
+    if (
+        useSuper &&
+        !attacker.superUnlocked
+    ) {
 
         statusDisplay.textContent =
-            data.error;
+            "That brawler's Super isn't unlocked.";
 
         return;
     }
 
-    state =
-        data.state;
+
+    // Combat reveals both cards.
+
+    attacker.revealed = true;
+    target.revealed = true;
+
+
+    // Basic attacks and Supers currently
+    // both deal 1 damage.
+
+    const damage = 1;
+
+    target.currentHP =
+        Math.max(
+            0,
+            target.currentHP - damage
+        );
+
+
+    // First attack unlocks Super.
+
+    if (!attacker.hasActedOnce) {
+
+        attacker.hasActedOnce = true;
+
+        attacker.superUnlocked = true;
+    }
+
+
+    game.log.push({
+
+        type:
+            useSuper
+                ? "SUPER_ATTACK"
+                : "BASIC_ATTACK",
+
+        playerId: "playerA",
+
+        attackerName:
+            attacker.name,
+
+        targetName:
+            target.name,
+
+        damage: damage
+    });
+
+
+    if (target.currentHP === 0) {
+
+        target.defeated = true;
+
+        game.opponent.graveyard.push(target);
+
+        game.log.push({
+
+            type: "DEFEATED",
+
+            playerId: "playerB",
+
+            cardName: target.name
+        });
+    }
+
+
+    checkWin();
+
+
+    if (game.isOver) {
+
+        clearSelection();
+
+        render();
+
+        renderLog();
+
+        return;
+    }
+
+
+    // Bob's turn.
 
     clearSelection();
+
+    game.activePlayer = "playerB";
+
+    game.turnNumber++;
+
+    render();
+
+
+    setTimeout(() => {
+
+        botTurn();
+
+    }, 500);
+}
+
+
+// ============================================================
+// BOT
+// ============================================================
+
+function botTurn() {
+
+    if (game.isOver) {
+        return;
+    }
+
+
+    if (game.activePlayer !== "playerB") {
+        return;
+    }
+
+
+    // Find a living attacker.
+
+    let attackerIndex = -1;
+
+
+    for (
+        let i = 0;
+        i < game.opponent.active.length;
+        i++
+    ) {
+
+        const card =
+            game.opponent.active[i];
+
+        if (
+            card &&
+            !card.defeated
+        ) {
+
+            attackerIndex = i;
+
+            break;
+        }
+    }
+
+
+    // If all active brawlers are gone,
+    // field a reserve.
+
+    if (attackerIndex === -1) {
+
+        botSwap();
+
+        return;
+    }
+
+
+    // Find a living player target.
+
+    let targetIndex = -1;
+
+
+    for (
+        let i = 0;
+        i < game.player.active.length;
+        i++
+    ) {
+
+        const card =
+            game.player.active[i];
+
+        if (
+            card &&
+            !card.defeated
+        ) {
+
+            targetIndex = i;
+
+            break;
+        }
+    }
+
+
+    if (targetIndex === -1) {
+
+        checkWin();
+
+        return;
+    }
+
+
+    const attacker =
+        game.opponent.active[
+            attackerIndex
+        ];
+
+    const target =
+        game.player.active[
+            targetIndex
+        ];
+
+
+    attacker.revealed = true;
+    target.revealed = true;
+
+
+    const useSuper =
+        attacker.superUnlocked &&
+        Math.random() < 0.30;
+
+
+    const damage = 1;
+
+
+    target.currentHP =
+        Math.max(
+            0,
+            target.currentHP - damage
+        );
+
+
+    if (!attacker.hasActedOnce) {
+
+        attacker.hasActedOnce = true;
+
+        attacker.superUnlocked = true;
+    }
+
+
+    game.log.push({
+
+        type:
+            useSuper
+                ? "SUPER_ATTACK"
+                : "BASIC_ATTACK",
+
+        playerId: "playerB",
+
+        attackerName:
+            attacker.name,
+
+        targetName:
+            target.name,
+
+        damage: damage
+    });
+
+
+    if (target.currentHP === 0) {
+
+        target.defeated = true;
+
+        game.player.graveyard.push(target);
+
+        game.log.push({
+
+            type: "DEFEATED",
+
+            playerId: "playerA",
+
+            cardName: target.name
+        });
+    }
+
+
+    checkWin();
+
+
+    if (game.isOver) {
+
+        render();
+
+        renderLog();
+
+        return;
+    }
+
+
+    game.activePlayer = "playerA";
+
+    game.turnNumber++;
+
 
     render();
 
@@ -107,103 +495,262 @@ async function attack(useSuper) {
 
 
 // ============================================================
-// SWAP
+// BOT SWAP
 // ============================================================
 
-async function swap(
+function botSwap() {
+
+    let reserveIndex = -1;
+
+    for (
+        let i = 0;
+        i < game.opponent.reserve.length;
+        i++
+    ) {
+
+        if (
+            !game.opponent.reserve[i].defeated
+        ) {
+
+            reserveIndex = i;
+
+            break;
+        }
+    }
+
+
+    if (reserveIndex === -1) {
+
+        checkWin();
+
+        return;
+    }
+
+
+    let emptySlot = -1;
+
+
+    for (
+        let i = 0;
+        i < game.opponent.active.length;
+        i++
+    ) {
+
+        if (
+            !game.opponent.active[i]
+        ) {
+
+            emptySlot = i;
+
+            break;
+        }
+    }
+
+
+    if (emptySlot === -1) {
+        return;
+    }
+
+
+    const card =
+        game.opponent.reserve.splice(
+            reserveIndex,
+            1
+        )[0];
+
+
+    card.revealed = false;
+
+
+    game.opponent.active[
+        emptySlot
+    ] = card;
+
+
+    game.log.push({
+
+        type: "SWAP",
+
+        playerId: "playerB",
+
+        cardName: card.name
+    });
+
+
+    game.activePlayer = "playerA";
+
+    game.turnNumber++;
+
+
+    render();
+
+    renderLog();
+}
+
+
+// ============================================================
+// PLAYER SWAP
+// ============================================================
+
+function swap(
     reserveIndex,
     activeSlot
 ) {
 
-    const response =
-        await fetch(
-            "/api/swap",
-            {
-                method: "POST",
+    if (game.isOver) {
+        return;
+    }
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
 
-                body: JSON.stringify({
+    if (game.activePlayer !== "playerA") {
+        return;
+    }
 
-                    reserveIndex:
-                        reserveIndex,
 
-                    activeSlot:
-                        activeSlot
+    const card =
+        game.player.reserve[
+            reserveIndex
+        ];
 
-                })
-            }
-        );
 
-    const data =
-        await response.json();
+    if (!card || card.defeated) {
+        return;
+    }
 
-    if (!data.success) {
+
+    if (
+        game.player.active[activeSlot]
+    ) {
 
         statusDisplay.textContent =
-            data.error;
+            "That active slot isn't empty.";
 
         return;
     }
 
-    state =
-        data.state;
+
+    game.player.reserve.splice(
+        reserveIndex,
+        1
+    );
+
+
+    card.revealed = true;
+
+
+    game.player.active[
+        activeSlot
+    ] = card;
+
+
+    game.log.push({
+
+        type: "SWAP",
+
+        playerId: "playerA",
+
+        cardName: card.name
+    });
+
 
     clearSelection();
+
+
+    game.activePlayer = "playerB";
+
+    game.turnNumber++;
+
 
     render();
 
     renderLog();
+
+
+    setTimeout(() => {
+
+        botTurn();
+
+    }, 500);
 }
 
 
 // ============================================================
-// NEW GAME
+// WIN CONDITION
 // ============================================================
 
-async function newGame() {
+function checkWin() {
 
-    const response =
-        await fetch(
-            "/api/new-game",
-            {
-                method: "POST"
-            }
+    const playerHasCards =
+        game.player.active.some(
+            card =>
+                card &&
+                !card.defeated
+        )
+        ||
+        game.player.reserve.some(
+            card =>
+                card &&
+                !card.defeated
         );
 
-    const data =
-        await response.json();
 
-    if (!data.success) {
+    const botHasCards =
+        game.opponent.active.some(
+            card =>
+                card &&
+                !card.defeated
+        )
+        ||
+        game.opponent.reserve.some(
+            card =>
+                card &&
+                !card.defeated
+        );
 
-        statusDisplay.textContent =
-            data.error;
+
+    if (!playerHasCards) {
+
+        game.isOver = true;
+
+        game.winner = "playerB";
+
+        game.log.push({
+
+            type: "GAME_OVER",
+
+            winnerId: "playerB"
+        });
 
         return;
     }
 
-    state =
-        data.state;
 
-    clearSelection();
+    if (!botHasCards) {
 
-    render();
+        game.isOver = true;
 
-    renderLog();
+        game.winner = "playerA";
+
+        game.log.push({
+
+            type: "GAME_OVER",
+
+            winnerId: "playerA"
+        });
+    }
 }
 
 
 // ============================================================
-// SELECTION
+// CLEAR SELECTION
 // ============================================================
 
 function clearSelection() {
 
     selectedAttacker = null;
+
     selectedTarget = null;
+
     selectedReserve = null;
 }
 
@@ -214,49 +761,55 @@ function clearSelection() {
 
 function render() {
 
-    if (!state) {
+    if (!game) {
         return;
     }
 
+
     renderTurn();
 
+
     board.innerHTML = "";
+
 
     renderOpponent();
 
     renderCenter();
 
     renderPlayer();
-
-    if (state.isOver) {
-
-        const winner =
-            state.winnerId === "playerA"
-                ? "Alice"
-                : "Bob";
-
-        turnDisplay.textContent =
-            `${winner.toUpperCase()} WINS!`;
-
-        turnDisplay.className =
-            "turn-display game-over";
-    }
 }
 
 
 // ============================================================
-// TURN
+// TURN DISPLAY
 // ============================================================
 
 function renderTurn() {
 
-    if (state.isOver) {
+    if (game.isOver) {
+
+        if (game.winner === "playerA") {
+
+            turnDisplay.textContent =
+                "YOU WIN!";
+
+            turnDisplay.className =
+                "turn-display game-over";
+
+        } else {
+
+            turnDisplay.textContent =
+                "BOB WINS!";
+
+            turnDisplay.className =
+                "turn-display game-over";
+        }
+
         return;
     }
 
-    if (
-        state.activePlayerId === "playerA"
-    ) {
+
+    if (game.activePlayer === "playerA") {
 
         turnDisplay.textContent =
             "YOUR TURN";
@@ -293,13 +846,15 @@ function renderOpponent() {
     section.className =
         "player-section opponent-section";
 
+
     section.innerHTML = `
+
         <div class="player-header">
 
             <div>
 
                 <h2>
-                    ${state.opponent.name}
+                    Bob
                 </h2>
 
                 <span class="player-subtitle">
@@ -311,7 +866,7 @@ function renderOpponent() {
             <div class="reserve-counter">
 
                 Reserve:
-                ${state.opponent.reserveCount}
+                ${game.opponent.reserve.length}
 
             </div>
 
@@ -320,13 +875,15 @@ function renderOpponent() {
         <h3>Active Brawlers</h3>
     `;
 
+
     const row =
         document.createElement("div");
 
     row.className =
         "card-row";
 
-    state.opponent.active.forEach(
+
+    game.opponent.active.forEach(
         (card, index) => {
 
             row.appendChild(
@@ -335,9 +892,9 @@ function renderOpponent() {
                     index
                 )
             );
-
         }
     );
+
 
     section.appendChild(row);
 
@@ -357,13 +914,15 @@ function renderPlayer() {
     section.className =
         "player-section player-section-bottom";
 
+
     section.innerHTML = `
+
         <div class="player-header">
 
             <div>
 
                 <h2>
-                    ${state.you.name}
+                    Alice
                 </h2>
 
                 <span class="player-subtitle">
@@ -375,7 +934,7 @@ function renderPlayer() {
             <div class="reserve-counter">
 
                 Reserve:
-                ${state.you.reserve.length}
+                ${game.player.reserve.length}
 
             </div>
 
@@ -384,13 +943,15 @@ function renderPlayer() {
         <h3>Active Brawlers</h3>
     `;
 
+
     const activeRow =
         document.createElement("div");
 
     activeRow.className =
         "card-row";
 
-    state.you.active.forEach(
+
+    game.player.active.forEach(
         (card, index) => {
 
             activeRow.appendChild(
@@ -399,9 +960,9 @@ function renderPlayer() {
                     index
                 )
             );
-
         }
     );
+
 
     section.appendChild(activeRow);
 
@@ -424,7 +985,7 @@ function renderPlayer() {
         "card-row reserve-row";
 
 
-    state.you.reserve.forEach(
+    game.player.reserve.forEach(
         (card, index) => {
 
             reserveRow.appendChild(
@@ -433,13 +994,12 @@ function renderPlayer() {
                     index
                 )
             );
-
         }
     );
 
-    section.appendChild(
-        reserveRow
-    );
+
+    section.appendChild(reserveRow);
+
 
     board.appendChild(section);
 }
@@ -457,6 +1017,37 @@ function renderCenter() {
     center.className =
         "battle-center";
 
+
+    const attackerName =
+        selectedAttacker !== null
+            ? game.player.active[
+                selectedAttacker
+              ]?.name
+            : "Attacker: None";
+
+
+    let targetName =
+        "Target: None";
+
+
+    if (selectedTarget !== null) {
+
+        const target =
+            game.opponent.active[
+                selectedTarget
+            ];
+
+
+        if (target) {
+
+            targetName =
+                target.revealed
+                    ? target.name
+                    : "Hidden Brawler";
+        }
+    }
+
+
     center.innerHTML = `
 
         <div class="vs">
@@ -466,15 +1057,7 @@ function renderCenter() {
         <div class="selection-panel">
 
             <div class="selection-item">
-
-                ${
-                    selectedAttacker !== null
-                        ? state.you.active[
-                            selectedAttacker
-                          ]?.name
-                        : "Attacker: None"
-                }
-
+                ${attackerName}
             </div>
 
             <div class="selection-arrow">
@@ -482,13 +1065,7 @@ function renderCenter() {
             </div>
 
             <div class="selection-item">
-
-                ${
-                    selectedTarget !== null
-                        ? getTargetName()
-                        : "Target: None"
-                }
-
+                ${targetName}
             </div>
 
         </div>
@@ -531,10 +1108,12 @@ function renderCenter() {
             "attack-button"
         );
 
+
     const superButton =
         document.getElementById(
             "super-button"
         );
+
 
     const clearButton =
         document.getElementById(
@@ -542,34 +1121,36 @@ function renderCenter() {
         );
 
 
-    attackButton.disabled =
-        selectedAttacker === null ||
-        selectedTarget === null ||
-        state.activePlayerId !== "playerA" ||
-        state.isOver;
-
-
     const attacker =
         selectedAttacker !== null
-            ? state.you.active[
+            ? game.player.active[
                 selectedAttacker
               ]
             : null;
+
+
+    attackButton.disabled =
+        selectedAttacker === null ||
+        selectedTarget === null ||
+        game.activePlayer !== "playerA" ||
+        game.isOver;
 
 
     superButton.disabled =
         selectedAttacker === null ||
         selectedTarget === null ||
         !attacker?.superUnlocked ||
-        state.activePlayerId !== "playerA" ||
-        state.isOver;
+        game.activePlayer !== "playerA" ||
+        game.isOver;
 
 
     attackButton.onclick =
         () => attack(false);
 
+
     superButton.onclick =
         () => attack(true);
+
 
     clearButton.onclick =
         () => {
@@ -599,7 +1180,9 @@ function createPlayerCard(
         element.className =
             "card empty-slot";
 
+
         element.innerHTML = `
+
             <div class="empty-icon">
                 +
             </div>
@@ -612,12 +1195,13 @@ function createPlayerCard(
 
         if (
             selectedReserve !== null &&
-            state.activePlayerId === "playerA"
+            game.activePlayer === "playerA"
         ) {
 
             element.classList.add(
                 "swap-target"
             );
+
 
             element.onclick =
                 () => swap(
@@ -652,25 +1236,33 @@ function createPlayerCard(
     element.onclick = () => {
 
         if (
-            state.activePlayerId !== "playerA"
+            game.activePlayer !== "playerA" ||
+            game.isOver
         ) {
+
             return;
         }
+
 
         if (
             selectedReserve !== null
         ) {
+
             clearSelection();
         }
+
 
         selectedAttacker =
             index;
 
+
         selectedTarget =
             null;
 
+
         statusDisplay.textContent =
             `${card.name} selected. Select an opponent.`;
+
 
         render();
     };
@@ -698,7 +1290,9 @@ function createOpponentCard(
         element.className =
             "card empty-slot";
 
+
         element.innerHTML = `
+
             <div class="empty-icon">
                 ×
             </div>
@@ -707,6 +1301,7 @@ function createOpponentCard(
                 Defeated
             </div>
         `;
+
 
         return element;
     }
@@ -732,7 +1327,9 @@ function createOpponentCard(
             "face-down"
         );
 
+
         element.innerHTML = `
+
             <div class="card-back">
 
                 <div class="star">
@@ -756,10 +1353,13 @@ function createOpponentCard(
     element.onclick = () => {
 
         if (
-            state.activePlayerId !== "playerA"
+            game.activePlayer !== "playerA" ||
+            game.isOver
         ) {
+
             return;
         }
+
 
         if (
             selectedAttacker === null
@@ -771,8 +1371,10 @@ function createOpponentCard(
             return;
         }
 
+
         selectedTarget =
             index;
+
 
         render();
     };
@@ -793,6 +1395,7 @@ function createReserveCard(
 
     const element =
         document.createElement("div");
+
 
     element.className =
         "card reserve-card";
@@ -832,25 +1435,30 @@ function createReserveCard(
         <div class="reserve-hint">
             Click to select
         </div>
-
     `;
 
 
     element.onclick = () => {
 
         if (
-            state.activePlayerId !== "playerA"
+            game.activePlayer !== "playerA" ||
+            game.isOver
         ) {
+
             return;
         }
 
+
         clearSelection();
+
 
         selectedReserve =
             index;
 
+
         statusDisplay.textContent =
             "Now click an empty active slot.";
+
 
         render();
     };
@@ -937,25 +1545,31 @@ function cardHTML(card) {
 
 function renderLog() {
 
-    if (!state || !state.log) {
+    if (!game) {
         return;
     }
 
+
     battleLog.innerHTML = "";
 
+
     const events =
-        [...state.log].reverse();
+        [...game.log].reverse();
+
 
     events.forEach(event => {
 
         const entry =
             document.createElement("div");
 
+
         entry.className =
             "log-entry";
 
+
         entry.textContent =
             formatEvent(event);
+
 
         battleLog.appendChild(entry);
     });
@@ -968,12 +1582,7 @@ function formatEvent(event) {
         event.type === "GAME_START"
     ) {
 
-        const name =
-            event.firstPlayerId === "playerA"
-                ? "Alice"
-                : "Bob";
-
-        return `${name} goes first.`;
+        return "Alice goes first.";
     }
 
 
@@ -986,10 +1595,13 @@ function formatEvent(event) {
                 ? "Alice"
                 : "Bob";
 
+
         return (
             `${player}'s ${event.attackerName} `
-            + `attacked ${event.targetName} `
-            + `for 1 damage.`
+            +
+            `attacked ${event.targetName} `
+            +
+            `for ${event.damage} damage.`
         );
     }
 
@@ -1003,11 +1615,13 @@ function formatEvent(event) {
                 ? "Alice"
                 : "Bob";
 
+
         return (
             `${player}'s ${event.attackerName} `
-            + `used SUPER on `
-            + `${event.targetName} `
-            + `for 1 damage.`
+            +
+            `used SUPER on ${event.targetName} `
+            +
+            `for ${event.damage} damage.`
         );
     }
 
@@ -1021,9 +1635,11 @@ function formatEvent(event) {
                 ? "Alice"
                 : "Bob";
 
+
         return (
             `${player}'s ${event.cardName} `
-            + `was defeated.`
+            +
+            `was defeated.`
         );
     }
 
@@ -1037,9 +1653,11 @@ function formatEvent(event) {
                 ? "Alice"
                 : "Bob";
 
+
         return (
             `${player} fielded `
-            + `${event.cardName}.`
+            +
+            `${event.cardName}.`
         );
     }
 
@@ -1053,6 +1671,7 @@ function formatEvent(event) {
                 ? "Alice"
                 : "Bob";
 
+
         return `${winner} wins the game!`;
     }
 
@@ -1065,31 +1684,10 @@ function formatEvent(event) {
 // HELPERS
 // ============================================================
 
-function getTargetName() {
-
-    const target =
-        state.opponent.active[
-            selectedTarget
-        ];
-
-    if (!target) {
-        return "Target: None";
-    }
-
-    return target.revealed
-        ? target.name
-        : "Hidden Brawler";
-}
-
-
 function getInitials(name) {
 
     const words =
         name
-            .replace(
-                "Placeholder",
-                ""
-            )
             .trim()
             .split(" ");
 
@@ -1119,4 +1717,5 @@ function getInitials(name) {
 newGameButton.onclick =
     newGame;
 
-getState();
+
+newGame();
