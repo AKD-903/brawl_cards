@@ -1435,9 +1435,9 @@ function createReserveCard(
         <div class="card-top">
 
             <span
-                class="class-badge ${card.brawlerClass}">
+                class="class-badge ${card.class}">
 
-                ${card.brawlerClass}
+                ${card.class}
 
             </span>
 
@@ -1505,9 +1505,9 @@ function cardHTML(card) {
         <div class="card-top">
 
             <span
-                class="class-badge ${card.brawlerClass}">
+                class="class-badge ${card.class}">
 
-                ${card.brawlerClass}
+                ${card.class}
 
             </span>
 
